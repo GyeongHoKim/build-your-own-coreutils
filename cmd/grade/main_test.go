@@ -23,6 +23,9 @@ func TestMain(m *testing.M) {
 	if mode := os.Getenv(fakeModeEnv); mode != "" {
 		os.Exit(runFakeTree(mode, os.Args[1:]))
 	}
+	if mode := os.Getenv(processHelperEnv); mode != "" {
+		os.Exit(runProcessHelper(mode, os.Args[1:]))
+	}
 	os.Exit(m.Run())
 }
 
@@ -95,5 +98,15 @@ func TestRunGradesExecutable(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRunUsageListsGraders(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	run(nil, &stdout, &stderr)
+	for name := range graders {
+		if !strings.Contains(stderr.String(), name) {
+			t.Errorf("usage %q does not list %s", stderr.String(), name)
+		}
 	}
 }
