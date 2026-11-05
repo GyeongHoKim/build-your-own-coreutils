@@ -21,6 +21,7 @@ Implement your own utilities in `playground/` and use the `coreutils-tutor` skil
 | Name | Core algorithm | Go standard library to study |
 |---|---|---|
 | tree | Recursive DFS, indentation prefix calculation | `os`, `io/fs`, `path/filepath`, `sort` |
+| [touch](cmd/touch/README.md) | Timestamp selection, strict date parsing | `os`, `io/fs`, `time`, `flag`, `syscall` |
 | cat | Streaming copy | `os`, `io`, `bufio` |
 | wc | Single-pass counting, UTF-8 decoding | `bufio`, `unicode/utf8`, `unicode` |
 | head / tail | Line buffering, ring buffer, reverse seek from the end of a file | `bufio`, `os`, `io` (`Seeker`) |
