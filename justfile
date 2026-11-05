@@ -18,6 +18,9 @@ build name="...":
 test:
     go test ./...
 
+grade name executable:
+    go run ./cmd/grade {{quote(name)}} {{quote(executable)}}
+
 cover:
     go test -coverprofile coverage.txt ./...
     go tool cover -func coverage.txt
