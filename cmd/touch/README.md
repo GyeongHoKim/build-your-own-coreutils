@@ -27,3 +27,13 @@ Run `touch --help` for every option. Build it with `just build touch`.
 
 - Windows may not update access times on its own (`fsutil behavior query disablelastaccess`). Times set by `touch` are still stored.
 - Creating symbolic links requires Developer Mode or administrator rights; `touch` follows existing links.
+
+## Implement it yourself
+
+Write your version in `playground/touch/`, then grade it as described in [Check your work](../../README.md#check-your-work):
+
+```sh
+just grade touch ./bin/my-touch.exe
+```
+
+Cases come in two tiers. Make every `core` case pass before working on `extended`. Each `FAIL` line says what the case expects, the arguments it used, and what your program did.

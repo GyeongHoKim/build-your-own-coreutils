@@ -23,6 +23,9 @@ func TestMain(m *testing.M) {
 	if mode := os.Getenv(fakeModeEnv); mode != "" {
 		os.Exit(runFakeTree(mode, os.Args[1:]))
 	}
+	if mode := os.Getenv(fakeTouchEnv); mode != "" {
+		os.Exit(runFakeTouch(mode, os.Args[1:]))
+	}
 	if mode := os.Getenv(processHelperEnv); mode != "" {
 		os.Exit(runProcessHelper(mode, os.Args[1:]))
 	}

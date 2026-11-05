@@ -14,9 +14,35 @@ This repository is the codebase for GyeongHo Kim's YouTube series "Build my own 
 
 ## Learn with your AI tutor!
 
-Implement your own utilities in `playground/` and use the `coreutils-tutor` skill for guidance and feedback.
+Implement your own utilities in `playground/<utility>/` and use the `coreutils-tutor` skill for guidance and feedback.
 
-## Table
+## Check your work
+
+Build your program, then pass the utility name and your executable to the grader from the repository root:
+
+```sh
+# Windows
+go build -o bin/my-<utility>.exe ./playground/<utility>
+just grade <utility> ./bin/my-<utility>.exe
+
+# Linux and macOS
+go build -o bin/my-<utility> ./playground/<utility>
+just grade <utility> ./bin/my-<utility>
+```
+
+The grader runs your program as a black box and never reads or changes your code. Each case prints one line:
+
+- `PASS <case>`
+- `FAIL <case>: <reason>`, with what the case expected and what your program did
+- `SKIP <case>: <why this machine cannot run it>`
+
+Skipped cases are left out of the totals, so a skip means less coverage, not a pass.
+
+The grader exits with `0` when every executed case passes, `1` when any case fails, and `2` for invalid usage, a program that cannot be started, a fixture problem, or when no case could run. Passing covers only the published cases; it does not prove complete compatibility, or correct behavior on operating systems where you did not run it.
+
+## Utilities
+
+Each implemented utility has a page next to its code, `cmd/<utility>/README.md`, with usage examples and differences from the GNU version. Build the reference implementation with `just build <utility>`.
 
 | Name | Core algorithm | Go standard library to study |
 |---|---|---|

@@ -195,3 +195,29 @@ func TestWindowAllowsClockStepAfterInvocation(t *testing.T) {
 		t.Fatalf("window ends at %s, want it to include a precise clock reading %s within one measured step", hi, precise)
 	}
 }
+
+func TestSeededFixtureKeepsAccessTime(t *testing.T) {
+	dir := t.TempDir()
+	if !readContentUpdatesAccess(t, dir) {
+		t.Skip("reading content does not update access time on this filesystem")
+	}
+	fx, err := newFixture(t.TempDir(), time.Local)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := newCaseBuilder(fx, dir)
+	seeded := b.file("target")
+	ref := b.reference()
+	if b.err != nil {
+		t.Fatal(b.err)
+	}
+	for name, want := range map[string]time.Time{"target": seeded.times.Access, refName: ref.Access} {
+		got, err := filetime.Read(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !got.Access.Equal(want) {
+			t.Errorf("%s: access time %s after setup, want the captured %s", name, got.Access, want)
+		}
+	}
+}
