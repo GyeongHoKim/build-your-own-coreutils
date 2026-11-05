@@ -1,0 +1,52 @@
+# Binaries and build output
+/bin/
+/dist/
+/out/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+
+# Test binaries, coverage, and profiles
+*.test
+*.out
+*.prof
+coverage.txt
+coverage.html
+cover.out
+
+# Go workspace and vendoring
+go.work
+go.work.sum
+/vendor/
+
+# Debugger
+__debug_bin*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temp files
+*.log
+*.tmp
+tmp/
+
+# Claude Code local settings
+.claude/settings.local.json
