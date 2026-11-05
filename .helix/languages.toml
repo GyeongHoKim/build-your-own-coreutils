@@ -1,0 +1,20 @@
+[language-server.gopls]
+command = "gopls"
+
+[language-server.gopls.config]
+"ui.diagnostic.staticcheck" = true
+"ui.completion.usePlaceholders" = true
+"ui.inlayhint.hints" = { parameterNames = true, assignVariableTypes = true, compositeLiteralFields = true, rangeVariableTypes = true }
+
+[language-server.golangci-lint-lsp]
+command = "golangci-lint-langserver"
+
+[language-server.golangci-lint-lsp.config]
+command = ["golangci-lint", "run", "--output.json.path=stdout", "--show-stats=false", "--issues-exit-code=1"]
+
+[[language]]
+name = "go"
+auto-format = true
+language-servers = ["gopls", "golangci-lint-lsp"]
+formatter = { command = "goimports" }
+indent = { tab-width = 4, unit = "\t" }
