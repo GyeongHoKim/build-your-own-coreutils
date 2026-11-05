@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"golang.org/x/text/collate"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -53,7 +56,7 @@ func Print(w io.Writer, root string, opts Options) (Counts, error) {
 		return Counts{}, werr
 	}
 
-	p := printer{w: w, opts: opts}
+	p := newPrinter(w, opts)
 	if err != nil {
 		// tree(1) lists a non-directory argument as a file.
 		if info, serr := os.Stat(root); serr == nil && !info.IsDir() {
@@ -87,11 +90,48 @@ func plural(n int, one, many string) string {
 }
 
 type printer struct {
-	w      io.Writer
-	opts   Options
-	counts Counts
-	err    error
-	stop   bool // a write failed; stop listing
+	w        io.Writer
+	opts     Options
+	collate  *collate.Collator
+	bytewise bool
+	counts   Counts
+	err      error
+	stop     bool // a write failed; stop listing
+}
+
+func newPrinter(w io.Writer, opts Options) printer {
+	locale := ""
+	for _, name := range []string{"LC_ALL", "LC_COLLATE", "LANG"} {
+		if value := os.Getenv(name); value != "" {
+			locale = value
+			break
+		}
+	}
+
+	if base, _, found := strings.Cut(locale, "@"); found {
+		locale = base
+	}
+	if base, _, found := strings.Cut(locale, "."); found {
+		locale = base
+	}
+	if locale == "C" || locale == "POSIX" {
+		return printer{w: w, opts: opts, bytewise: true}
+	}
+
+	tag := language.Und
+	if locale != "" {
+		if parsed, err := language.Parse(strings.ReplaceAll(locale, "_", "-")); err == nil {
+			tag = parsed
+		}
+	}
+	return printer{w: w, opts: opts, collate: collate.New(tag)}
+}
+
+func (p *printer) compareNames(a, b string) int {
+	if p.bytewise {
+		return strings.Compare(a, b)
+	}
+	return p.collate.CompareString(a, b)
 }
 
 // entry is a directory entry with its path and whether tree(1) treats it as a
@@ -166,6 +206,9 @@ func (p *printer) filter(dir string, dirEntries []os.DirEntry) []entry {
 		}
 		out = append(out, e)
 	}
+	slices.SortStableFunc(out, func(a, b entry) int {
+		return p.compareNames(a.Name(), b.Name())
+	})
 	if p.opts.DirsFirst {
 		slices.SortStableFunc(out, func(a, b entry) int {
 			switch {
