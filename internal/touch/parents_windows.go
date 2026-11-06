@@ -6,7 +6,7 @@ import (
 )
 
 func resolvedPath(path string) string {
-	if strings.HasPrefix(path, `\?\`) {
+	if strings.HasPrefix(path, `\\?\`) {
 		return path
 	}
 	return filepath.Clean(path)

@@ -19,6 +19,8 @@ func TestUpdateNoCreateLexicalDotDot(t *testing.T) {
 		{`missing\..\absent`, false},
 		{`missing\..\f\x`, true},
 		{root + `\missing\..\f\x`, true},
+		{`\\?\` + root + `\f\x`, true},
+		{`\\?\` + root + `\missing\..\f\x`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
