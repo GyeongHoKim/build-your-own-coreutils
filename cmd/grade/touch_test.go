@@ -216,7 +216,7 @@ func (ft *fakeTouch) parseTime(value string, now time.Time) (time.Time, error) {
 			return time.Time{}, errors.New("calendar")
 		}
 	}
-	if ft.mode == touchPOSIXStyle && (t.Before(time.Unix(0, 0)) || !t.Before(time.Date(2038, 1, 1, 0, 0, 0, 0, time.UTC))) {
+	if ft.mode == touchPOSIXStyle && (t.Before(time.Unix(0, 0)) || t.After(time.Unix(1<<31-1, 0))) {
 		return time.Time{}, errors.New("out of range")
 	}
 	return t, nil
@@ -549,7 +549,8 @@ func TestTouchHelperContracts(t *testing.T) {
 		{"gnu treats - as stdout", touchGNUStyle, []string{"-"}, wantStatus(0)},
 		{"posix rejects help", touchPOSIXStyle, []string{"--help"}, wantStatus(1)},
 		{"posix rejects pre-Epoch", touchPOSIXStyle, []string{"-t", "196906151230", "file"}, wantStatus(1)},
-		{"posix rejects 2038", touchPOSIXStyle, []string{"-t", "203801021200", "file"}, wantStatus(1)},
+		{"posix rejects after the 32-bit time_t maximum", touchPOSIXStyle, []string{"-t", "203801200000", "file"}, wantStatus(1)},
+		{"posix accepts early 2038", touchPOSIXStyle, []string{"-t", "203801020000", "file"}, wantStatus(0)},
 		{"posix accepts 2037", touchPOSIXStyle, []string{"-t", "203712312359", "file"}, wantStatus(0)},
 		{"posix uses its basename", touchPOSIXStyle, []string{"-z", "file"}, func(r *result) string {
 			if !strings.HasPrefix(r.stderr, "my-touch") {
