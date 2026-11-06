@@ -33,7 +33,7 @@ jobs:
       # The justfile runs Unix recipes with zsh, which Ubuntu runners lack.
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y zsh
-      # Formatting does not depend on the OS, and Windows checkouts use CRLF.
+      # Formatting does not depend on the OS, so one runner checks it.
       - name: Check formatting
         if: runner.os == 'Linux'
         run: |
