@@ -12,6 +12,17 @@ This repository is the codebase for GyeongHo Kim's YouTube series "Build my own 
 
 @TODO Add the playlist URL here
 
+## Install on Windows
+
+Release builds for Windows (amd64 and arm64) are published through [Scoop](https://scoop.sh/):
+
+```powershell
+scoop bucket add gyeongho https://github.com/GyeongHoKim/scoop-bucket
+scoop install gyeongho/gcoreutils
+```
+
+The `gcoreutils` package installs every released utility with a `g` prefix, such as `gtouch` and `gtree`, so they do not shadow Windows built-ins like `tree.com`. Diagnostics still use the original utility name, for example `touch: cannot touch ...`. You can also download the zip archives from [GitHub Releases](https://github.com/GyeongHoKim/build-your-own-coreutils/releases).
+
 ## Learn with your AI tutor!
 
 Implement your own utilities in `playground/<utility>/` and use the `coreutils-tutor` skill for guidance and feedback.

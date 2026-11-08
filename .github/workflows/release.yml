@@ -1,0 +1,136 @@
+name: Release
+
+# release-please keeps a release PR open that bumps the version from
+# Conventional Commits and updates CHANGELOG.md. Merging that PR tags the
+# commit and creates a draft release. The jobs below attach the archives,
+# test them, and only then publish the release and update the Scoop bucket,
+# so a failed check leaves nothing visible to users.
+on:
+  push:
+    branches: [main]
+
+# Never cancel a release that is already publishing.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+
+  # Tags created with the default token do not trigger other workflows, so
+  # the release is checked and published here rather than on a tag push.
+  ci:
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  goreleaser:
+    needs: [release-please, ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: scoop-manifest
+          path: dist/scoop/bucket/gcoreutils.json
+          if-no-files-found: error
+
+  # Run the uploaded binaries on Windows to catch packaging mistakes that
+  # the unit tests cannot see, such as a missing or misnamed executable.
+  smoke:
+    needs: [release-please, goreleaser]
+    permissions:
+      contents: write # draft releases are visible only with write access
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: amd64
+          - runner: windows-11-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Download release archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag }}
+        run: gh release download $env:TAG --repo $env:GITHUB_REPOSITORY --pattern "*_windows_${{ matrix.arch }}.zip" --pattern checksums.txt
+      - name: Verify checksum
+        run: |
+          $zip = Get-ChildItem *.zip | Select-Object -First 1
+          $want = (Select-String -Path checksums.txt -SimpleMatch $zip.Name).Line.Split(' ')[0]
+          $got = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($got -ne $want) { throw "checksum mismatch for $($zip.Name)" }
+          Expand-Archive $zip -DestinationPath pkg
+      - name: Run binaries
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          .\pkg\gtouch.exe new.txt
+          if (-not (Test-Path new.txt)) { throw "gtouch did not create new.txt" }
+          .\pkg\gtree.exe pkg
+
+  publish:
+    needs: [release-please, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag }}
+    steps:
+      - name: Publish the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+      - uses: actions/download-artifact@v8
+        with:
+          name: scoop-manifest
+      # The default token cannot push to other repositories, so the Scoop
+      # bucket needs a token with write access to GyeongHoKim/scoop-bucket.
+      - uses: actions/checkout@v7
+        with:
+          repository: GyeongHoKim/scoop-bucket
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: scoop-bucket
+      - name: Update the Scoop bucket
+        working-directory: scoop-bucket
+        run: |
+          cp ../gcoreutils.json bucket/gcoreutils.json
+          git add bucket/gcoreutils.json
+          if git diff --cached --quiet; then
+            echo "Manifest unchanged"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Scoop update for gcoreutils version $TAG"
+          git push

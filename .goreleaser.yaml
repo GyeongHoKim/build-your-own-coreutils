@@ -1,0 +1,63 @@
+# Release configuration for the Windows distribution of the utilities.
+# Every utility ships in one bundle, gcoreutils, and each binary carries a
+# "g" prefix so it does not collide with Windows built-ins such as tree.com.
+version: 2
+
+project_name: gcoreutils
+
+builds:
+  - &windows
+    id: gtouch
+    main: ./cmd/touch
+    binary: gtouch
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos: [windows]
+    goarch: [amd64, arm64]
+  - <<: *windows
+    id: gtree
+    main: ./cmd/tree
+    binary: gtree
+
+archives:
+  - formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - src: cmd/touch/README.md
+        dst: docs/touch.md
+
+checksum:
+  name_template: checksums.txt
+
+# release-please creates a draft GitHub release named after the tag, with
+# notes from CHANGELOG.md. GoReleaser attaches the archives to that draft and
+# leaves it unpublished; the release workflow publishes it after smoke tests.
+release:
+  name_template: "{{ .Tag }}"
+  draft: true
+  use_existing_draft: true
+  mode: keep-existing
+  prerelease: auto
+
+changelog:
+  disable: true
+
+# The manifest is only written to dist/scoop here. The release workflow
+# commits it to the bucket after the release is published, because the
+# manifest's download URLs return 404 while the release is a draft.
+scoops:
+  - repository:
+      owner: GyeongHoKim
+      name: scoop-bucket
+    directory: bucket
+    homepage: https://github.com/GyeongHoKim/build-your-own-coreutils
+    description: Unix-style utilities written in Go (gtouch, gtree)
+    license: MIT
+    skip_upload: true

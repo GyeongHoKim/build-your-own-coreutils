@@ -25,10 +25,15 @@ cover:
     go test -coverprofile coverage.txt ./...
     go tool cover -func coverage.txt
 
+# Validate the release configuration and build the release archives locally into dist/.
+snapshot:
+    goreleaser check
+    goreleaser release --snapshot --clean
+
 [unix]
 clean:
-    rm -rf bin coverage.txt
+    rm -rf bin dist coverage.txt
 
 [windows]
 clean:
-    foreach ($p in 'bin', 'coverage.txt') { if (Test-Path $p) { Remove-Item -Recurse -Force $p } }
+    foreach ($p in 'bin', 'dist', 'coverage.txt') { if (Test-Path $p) { Remove-Item -Recurse -Force $p } }
