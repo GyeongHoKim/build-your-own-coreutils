@@ -23,8 +23,6 @@ scoop install gyeongho/gcoreutils
 
 The `gcoreutils` package installs every released utility with a `g` prefix, such as `gtouch` and `gtree`, so they do not shadow Windows built-ins like `tree.com`. Diagnostics still use the original utility name, for example `touch: cannot touch ...`. You can also download the zip archives from [GitHub Releases](https://github.com/GyeongHoKim/build-your-own-coreutils/releases).
 
-Releases are automated with [release-please](https://github.com/googleapis/release-please). It reads [Conventional Commits](https://www.conventionalcommits.org/) on `main` and keeps a release PR open that bumps the version (`feat` → minor, `fix` → patch while below 1.0) and updates `CHANGELOG.md`. Merging that PR tags the release and publishes the archives and the Scoop manifest. A new utility ships only after it is added to `builds` in `.goreleaser.yaml`.
-
 ## Learn with your AI tutor!
 
 Implement your own utilities in `playground/<utility>/` and use the `coreutils-tutor` skill for guidance and feedback.
