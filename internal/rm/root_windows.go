@@ -33,13 +33,32 @@ func isRootDir(path string, _ fs.FileInfo) (bool, error) {
 		return false, err
 	}
 	defer f.Close()
+	return isRootFile(f)
+}
+
+// isRootHandle reports whether dir, an open directory, is the root of a
+// volume or network share. Unlike isRootDir, it examines the directory dir
+// refers to, so the answer cannot be invalidated by a path that changes
+// later.
+func isRootHandle(dir *os.Root) (bool, error) {
+	f, err := dir.Open(".")
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	return isRootFile(f)
+}
+
+// isRootFile reports whether the open directory f is the root of a volume
+// or network share.
+func isRootFile(f *os.File) (bool, error) {
 	h := windows.Handle(f.Fd())
 	p, err := finalPath(h, volumeNameGUID)
 	if err != nil {
 		p, err = finalPath(h, volumeNameDOS)
 	}
 	if err != nil {
-		return false, &fs.PathError{Op: "GetFinalPathNameByHandle", Path: path, Err: err}
+		return false, &fs.PathError{Op: "GetFinalPathNameByHandle", Path: f.Name(), Err: err}
 	}
 	return isVolumeRootPath(p), nil
 }

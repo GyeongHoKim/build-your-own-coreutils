@@ -130,7 +130,24 @@ func (w *walker) linkedDir(op string, fi fs.FileInfo) bool {
 	notDir := func() error { return ErrNotDir }
 	switch {
 	case w.opts.Recursive:
-		return w.tree(fi, op, func() (*os.Root, error) { return os.OpenRoot(op) }, notDir)
+		if beforeOpen != nil {
+			beforeOpen(op)
+		}
+		dir, err := os.OpenRoot(op)
+		if err == nil {
+			// operand checked op by path, and the link may lead to the
+			// root by now. Check the directory that is actually opened.
+			isroot, err := openedIsRoot(dir)
+			if err != nil || isroot {
+				closeRoot(dir)
+				if err != nil {
+					return w.statFailed(op, err)
+				}
+				w.failed(op, ErrRoot)
+				return false
+			}
+		}
+		return w.tree(fi, op, func() (*os.Root, error) { return dir, err }, notDir)
 	case w.opts.Dirs:
 		return w.single(fi, op, notDir)
 	default:
@@ -138,6 +155,10 @@ func (w *walker) linkedDir(op string, fi fs.FileInfo) bool {
 		return false
 	}
 }
+
+// openedIsRoot reports whether an open directory is the root of a file
+// system. Tests replace it.
+var openedIsRoot = isRootHandle
 
 // trimSeparators removes trailing path separators from p, keeping the one
 // that names a root directory.

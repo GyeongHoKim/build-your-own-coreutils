@@ -512,6 +512,68 @@ func TestSplitOperand(t *testing.T) {
 	}
 }
 
+func TestIsRootHandle(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{rootPath(t), true},
+		{t.TempDir(), false},
+	}
+	for _, tt := range tests {
+		dir, err := os.OpenRoot(tt.path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := isRootHandle(dir)
+		_ = dir.Close()
+		if err != nil || got != tt.want {
+			t.Errorf("isRootHandle(%q) = %v, %v; want %v", tt.path, got, err, tt.want)
+		}
+	}
+}
+
+// If "link/" is redirected to the root after the operand was checked, the
+// directory actually opened must still be refused. A stand-in directory
+// plays the root, so a missing check cannot damage the system.
+func TestLinkRedirectedToRootRefused(t *testing.T) {
+	inTempDir(t)
+	mkdir(t, "dir")
+	mkdir(t, "fakeroot")
+	writeFile(t, filepath.Join("fakeroot", "f"))
+	symlink(t, "dir", "link")
+	fake, err := os.Stat("fakeroot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldCheck := openedIsRoot
+	openedIsRoot = func(dir *os.Root) (bool, error) {
+		st, err := dir.Stat(".")
+		return err == nil && os.SameFile(st, fake), err
+	}
+	beforeOpen = func(name string) {
+		if name != "link/" {
+			return
+		}
+		if err := os.Remove("link"); err != nil {
+			t.Error(err)
+		}
+		if err := os.Symlink("fakeroot", "link"); err != nil {
+			t.Error(err)
+		}
+	}
+	t.Cleanup(func() { openedIsRoot, beforeOpen = oldCheck, nil })
+	r, cb := collect()
+
+	if Remove([]string{"link/"}, Options{Recursive: true}, cb) {
+		t.Error("Remove reported success")
+	}
+	assertFailed(t, r, "link/", ErrRoot)
+	if !exists(t, filepath.Join("fakeroot", "f")) {
+		t.Error("the redirected directory was emptied")
+	}
+}
+
 func TestSymlinkToDirectoryTrailingSlash(t *testing.T) {
 	inTempDir(t)
 	mkdir(t, "dir")

@@ -18,3 +18,14 @@ func isRootDir(_ string, fi fs.FileInfo) (bool, error) {
 	}
 	return os.SameFile(fi, root), nil
 }
+
+// isRootHandle reports whether dir, an open directory, is the root
+// directory "/". Unlike isRootDir, it examines the directory dir refers to,
+// so the answer cannot be invalidated by a path that changes later.
+func isRootHandle(dir *os.Root) (bool, error) {
+	st, err := dir.Stat(".")
+	if err != nil {
+		return false, err
+	}
+	return isRootDir("", st)
+}
