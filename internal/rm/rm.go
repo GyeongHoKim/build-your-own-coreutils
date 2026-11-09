@@ -41,7 +41,7 @@ var (
 // Remove applies the POSIX rm algorithm to each operand and reports whether
 // every requested entry was removed or declined.
 func Remove(operands []string, opts Options, cb Callbacks) bool {
-	w := &walker{opts: opts, cb: cb}
+	w := newWalker(opts, cb)
 	ok := true
 	for _, op := range operands {
 		if !w.operand(op) {

@@ -4,13 +4,35 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"runtime"
 	"slices"
+	"sync"
+	"sync/atomic"
 )
 
 // walker carries the state shared by every entry that Remove processes.
 type walker struct {
 	opts Options
 	cb   Callbacks
+
+	// mu serializes callbacks. It is held while Confirm waits for an
+	// answer, so no other output interleaves with a prompt.
+	mu sync.Mutex
+	// sem holds a token for each goroutine removing an entry; the caller's
+	// goroutine makes up the remaining job.
+	sem chan struct{}
+}
+
+func newWalker(opts Options, cb Callbacks) *walker {
+	jobs := opts.Jobs
+	switch {
+	case opts.Interactive:
+		// Questions must come one at a time in directory order.
+		jobs = 1
+	case jobs < 1:
+		jobs = runtime.NumCPU()
+	}
+	return &walker{opts: opts, cb: cb, sem: make(chan struct{}, jobs-1)}
 }
 
 // beforeRemove and beforeOpen, when set by tests, are called with the name
@@ -97,12 +119,7 @@ func (w *walker) tree(fi fs.FileInfo, display string, open func() (*os.Root, err
 			return true
 		}
 	}
-	ok := true
-	for _, name := range names {
-		if !w.entry(dir, name, join(display, name)) {
-			ok = false
-		}
-	}
+	ok := w.entries(dir, names, display)
 	closeRoot(dir)
 
 	// Step 2d.
@@ -120,6 +137,36 @@ func (w *walker) tree(fi fs.FileInfo, display string, open func() (*os.Root, err
 	}
 	w.removed(display, true)
 	return ok
+}
+
+// entries applies entry to each of names inside dir, whose user-visible
+// path is display, and reports whether every one succeeded. An entry runs
+// in a new goroutine while a job is free and otherwise inline, so the number
+// of goroutines stays bounded and a full semaphore cannot deadlock the
+// recursion. entries returns only after every entry is done.
+func (w *walker) entries(dir *os.Root, names []string, display string) bool {
+	var (
+		wg     sync.WaitGroup
+		failed atomic.Bool
+	)
+	for _, name := range names {
+		run := func() {
+			if !w.entry(dir, name, join(display, name)) {
+				failed.Store(true)
+			}
+		}
+		select {
+		case w.sem <- struct{}{}:
+			wg.Go(func() {
+				defer func() { <-w.sem }()
+				run()
+			})
+		default:
+			run()
+		}
+	}
+	wg.Wait()
+	return !failed.Load()
 }
 
 // prompting reports whether steps 2b and 3 ask before acting on an entry
@@ -188,13 +235,21 @@ func (w *walker) statFailed(path string, err error) bool {
 }
 
 func (w *walker) confirm(question string) bool {
-	return w.cb.Confirm != nil && w.cb.Confirm(question)
+	if w.cb.Confirm == nil {
+		return false
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.cb.Confirm(question)
 }
 
 func (w *walker) removed(path string, dir bool) {
-	if w.cb.Removed != nil {
-		w.cb.Removed(path, dir)
+	if w.cb.Removed == nil {
+		return
 	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.cb.Removed(path, dir)
 }
 
 // failed reports err for path, dropping the *fs.PathError wrapper whose
@@ -203,7 +258,10 @@ func (w *walker) failed(path string, err error) {
 	if pe, ok := errors.AsType[*fs.PathError](err); ok {
 		err = pe.Err
 	}
-	if w.cb.Failed != nil {
-		w.cb.Failed(path, err)
+	if w.cb.Failed == nil {
+		return
 	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.cb.Failed(path, err)
 }

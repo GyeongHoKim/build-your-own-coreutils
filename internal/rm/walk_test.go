@@ -52,7 +52,8 @@ func TestRecursiveRemovesTree(t *testing.T) {
 	mkdir(t, j("t", "e"))
 	r, cb := collect()
 
-	if !Remove([]string{"t"}, Options{Recursive: true}, cb) {
+	// One job removes entries in sorted order, so the order is exact.
+	if !Remove([]string{"t"}, Options{Recursive: true, Jobs: 1}, cb) {
 		t.Errorf("Remove reported failure: %v", r.failed)
 	}
 	if exists(t, "t") {
