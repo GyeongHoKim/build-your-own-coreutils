@@ -21,7 +21,7 @@ scoop bucket add gyeongho https://github.com/GyeongHoKim/scoop-bucket
 scoop install gyeongho/gcoreutils
 ```
 
-The `gcoreutils` package installs every released utility with a `g` prefix, such as `gtouch` and `gtree`, so they do not shadow Windows built-ins like `tree.com`. Diagnostics still use the original utility name, for example `touch: cannot touch ...`. You can also download the zip archives from [GitHub Releases](https://github.com/GyeongHoKim/build-your-own-coreutils/releases).
+The `gcoreutils` package installs every released utility with a `g` prefix, such as `gtouch`, `gtree`, and `grm`, so they do not shadow Windows built-ins like `tree.com` or the PowerShell `rm` alias. Diagnostics still use the original utility name, for example `touch: cannot touch ...`. You can also download the zip archives from [GitHub Releases](https://github.com/GyeongHoKim/build-your-own-coreutils/releases).
 
 ## Learn with your AI tutor!
 
@@ -63,7 +63,8 @@ Each implemented utility has a page next to its code, `cmd/<utility>/README.md`,
 | wc | Single-pass counting, UTF-8 decoding | `bufio`, `unicode/utf8`, `unicode` |
 | head / tail | Line buffering, ring buffer, reverse seek from the end of a file | `bufio`, `os`, `io` (`Seeker`) |
 | ls | Directory listing, sorting, file mode formatting | `os`, `io/fs`, `sort`, `text/tabwriter` |
-| cp / rm | Recursive walk, safe overwrite handling | `os`, `io`, `path/filepath` |
+| cp | Recursive walk, safe overwrite handling | `os`, `io`, `path/filepath` |
+| [rm](cmd/rm/README.md) | Safe recursive removal, parallel traversal, prompting | `os`, `io/fs`, `path/filepath`, `sync` |
 | grep | Line scanning, regex matching | `regexp`, `bufio`, `flag` |
 | find | Tree traversal combined with predicates | `io/fs`, `path/filepath`, `time` |
 | sort / uniq | External merge sort, adjacent duplicate removal | `sort`, `container/heap`, `bufio` |
