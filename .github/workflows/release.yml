@@ -98,6 +98,10 @@ jobs:
           .\pkg\gtouch.exe new.txt
           if (-not (Test-Path new.txt)) { throw "gtouch did not create new.txt" }
           .\pkg\gtree.exe pkg
+          New-Item -ItemType Directory -Path rmdir-test | Out-Null
+          Set-Content -Path rmdir-test\file.txt -Value x
+          .\pkg\grm.exe -r rmdir-test
+          if (Test-Path rmdir-test) { throw "grm did not remove rmdir-test" }
 
   publish:
     needs: [release-please, smoke]

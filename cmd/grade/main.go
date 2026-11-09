@@ -15,7 +15,9 @@
 // program name as long as they mention the path involved. For touch this
 // leaves out help, combined short options, options after operands, the "-"
 // operand, seconds 60, and the 68/69 century boundary; explicit dates stay
-// within 1970 through 2037.
+// within 1970 through 2037. For rm this leaves out the parent of a directory
+// whose children were declined at an interactive prompt, and a symbolic link
+// operand with a trailing slash.
 package main
 
 import (
@@ -32,6 +34,7 @@ import (
 const caseTimeout = 10 * time.Second
 
 var graders = map[string]func(executable string, stdout, stderr io.Writer) int{
+	"rm":    gradeRm,
 	"touch": gradeTouch,
 	"tree":  gradeTree,
 }

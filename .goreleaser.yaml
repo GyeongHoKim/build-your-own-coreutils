@@ -23,6 +23,10 @@ builds:
     id: gtree
     main: ./cmd/tree
     binary: gtree
+  - <<: *windows
+    id: grm
+    main: ./cmd/rm
+    binary: grm
 
 archives:
   - formats: [zip]
@@ -30,8 +34,10 @@ archives:
     files:
       - LICENSE
       - README.md
-      - src: cmd/touch/README.md
-        dst: docs/touch.md
+      # Keep each page at its repository path, so links between README.md
+      # and the pages work inside the archive too.
+      - cmd/touch/README.md
+      - cmd/rm/README.md
 
 checksum:
   name_template: checksums.txt
@@ -58,6 +64,6 @@ scoops:
       name: scoop-bucket
     directory: bucket
     homepage: https://github.com/GyeongHoKim/build-your-own-coreutils
-    description: Unix-style utilities written in Go (gtouch, gtree)
+    description: Unix-style utilities written in Go (gtouch, gtree, grm)
     license: MIT
     skip_upload: true
