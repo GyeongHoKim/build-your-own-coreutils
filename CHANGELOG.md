@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/GyeongHoKim/build-your-own-coreutils/compare/v1.0.0...v1.1.0) (2026-11-09)
+
+
+### Features
+
+* **grade:** grade rm implementations ([c3a25e4](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/c3a25e427cb7e6e29ad3f472ef78dfe51f6a1910))
+* **rm:** add the rm command ([5551b85](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/5551b85ecdbd5d0dca099dd98bca1e85650dc32a))
+* **rm:** remove directory hierarchies ([066d6b1](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/066d6b1f753fbb918b07162f567a51db511ae2cd))
+* **rm:** remove siblings in parallel ([43afe13](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/43afe1370467a426af70626e941eaff80d8a9f8e))
+* **rm:** remove single entries per POSIX ([0558a94](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/0558a94b621fb21745292266fe23ceabaf49885c))
+
+
+### Bug Fixes
+
+* **grade:** tell missing rm paths apart from stat errors ([6927937](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/6927937cf99b839553314b936f5d234fd8fa02af))
+* **rm:** check the opened directory for the root under "link/" ([e3c5455](https://github.com/GyeongHoKim/build-your-own-coreutils/commit/e3c54554aa88af3762ef208ead88691ff13709cc))
+
 ## 1.0.0 (2026-11-08)
 
 
