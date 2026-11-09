@@ -34,10 +34,10 @@ archives:
     files:
       - LICENSE
       - README.md
-      - src: cmd/touch/README.md
-        dst: docs/touch.md
-      - src: cmd/rm/README.md
-        dst: docs/rm.md
+      # Keep each page at its repository path, so links between README.md
+      # and the pages work inside the archive too.
+      - cmd/touch/README.md
+      - cmd/rm/README.md
 
 checksum:
   name_template: checksums.txt
