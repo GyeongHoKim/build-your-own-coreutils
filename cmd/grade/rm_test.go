@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -80,4 +81,23 @@ func buildStub(t *testing.T, source string) string {
 		t.Fatalf("build stub: %v\n%s", err, out)
 	}
 	return exe
+}
+
+// A path that cannot be examined is neither gone nor kept; the failure says
+// why instead of guessing.
+func TestRmJudgeStatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows reports a path under a file as missing")
+	}
+	dir := t.TempDir()
+	if err := rmFixture(dir, "f"); err != nil {
+		t.Fatal(err)
+	}
+	under := filepath.Join("f", "x") // ENOTDIR, not ENOENT
+	for _, inv := range []rmInvocation{{gone: []string{under}}, {kept: []string{under}}} {
+		got := inv.judge(&result{}, dir, 0)
+		if !strings.Contains(got, under) || !strings.Contains(got, "not a directory") {
+			t.Errorf("judge(gone %v, kept %v) = %q, want the path and its error", inv.gone, inv.kept, got)
+		}
+	}
 }

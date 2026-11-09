@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,13 +128,21 @@ func (inv *rmInvocation) judge(r *result, dir string, timeout time.Duration) str
 		}
 	}
 	for _, p := range inv.gone {
-		if _, err := os.Lstat(filepath.Join(dir, p)); err == nil {
+		_, err := os.Lstat(filepath.Join(dir, p))
+		switch {
+		case err == nil:
 			return p + " still exists"
+		case !errors.Is(err, fs.ErrNotExist):
+			return fmt.Sprintf("cannot tell whether %s was removed: %v", p, err)
 		}
 	}
 	for _, p := range inv.kept {
-		if _, err := os.Lstat(filepath.Join(dir, p)); err != nil {
+		_, err := os.Lstat(filepath.Join(dir, p))
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
 			return p + " was removed"
+		case err != nil:
+			return fmt.Sprintf("cannot tell whether %s was kept: %v", p, err)
 		}
 	}
 	return ""
