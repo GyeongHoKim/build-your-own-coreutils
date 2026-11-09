@@ -3,6 +3,7 @@ package rm
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -74,7 +75,6 @@ func (w *walker) operand(op string) bool {
 		return false
 	}
 
-	target := trimmed
 	if trailing {
 		// POSIX pathname resolution: "name/" names a directory, following
 		// name if it is a symbolic link.
@@ -91,19 +91,17 @@ func (w *walker) operand(op string) bool {
 				w.failed(op, ErrNotDir)
 				return false
 			}
-			if target, err = filepath.EvalSymlinks(trimmed); err != nil {
-				return w.statFailed(op, err)
-			}
+			return w.linkedDir(op, fi)
 		}
 	}
 
-	dir, name := splitOperand(target)
+	dir, name := splitOperand(trimmed)
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		return w.statFailed(op, err)
 	}
 	defer root.Close()
-	return w.remove(root, name, op)
+	return w.entry(root, name, op)
 }
 
 // splitOperand splits p after its last separator into the directory that
@@ -121,6 +119,24 @@ func splitOperand(p string) (dir, name string) {
 		dir = "."
 	}
 	return dir, name
+}
+
+// linkedDir handles an operand such as "link/" that names a directory
+// through a symbolic link or junction, described by fi. With -R its entries
+// are removed. The directory itself is never removed: step 4 would remove
+// op, which is not a directory but a link followed by a slash, so it fails
+// with ErrNotDir as rmdir does.
+func (w *walker) linkedDir(op string, fi fs.FileInfo) bool {
+	notDir := func() error { return ErrNotDir }
+	switch {
+	case w.opts.Recursive:
+		return w.tree(fi, op, func() (*os.Root, error) { return os.OpenRoot(op) }, notDir)
+	case w.opts.Dirs:
+		return w.single(fi, op, notDir)
+	default:
+		w.failed(op, ErrIsDir)
+		return false
+	}
 }
 
 // trimSeparators removes trailing path separators from p, keeping the one
