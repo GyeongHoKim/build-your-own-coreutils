@@ -49,3 +49,13 @@ Run `rm --help` for every option. Build it with `just build rm`.
 - A file truly locked by a running program fails, and `rm` does not retry.
 - The read-only attribute counts as write-protected for files only.
 - In PowerShell, `rm` is an alias of `Remove-Item`. Use `grm` from the Scoop package.
+
+## Implement it yourself
+
+Write your version in `playground/rm/`, then grade it as described in [Check your work](../../README.md#check-your-work):
+
+```sh
+just grade rm ./bin/my-rm.exe
+```
+
+Cases come in two tiers. Make every `core` case pass before working on `extended`. Each `FAIL` line says what the case expects, the arguments it used, and what your program did.
